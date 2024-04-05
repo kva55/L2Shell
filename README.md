@@ -16,7 +16,7 @@ python l2shell.py -l
 python l2shell.py -c
 ```
 
-### Sending command
+### Sending command (from attacker host)
 ```
 > 123456 <command>
 ```
