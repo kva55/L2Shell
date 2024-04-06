@@ -70,6 +70,7 @@ def process_return_frame(frame):
                     #nstring = string.replace(attacker_id, '')
                     
                     nstring = string.replace(returnc, '')
+                    nstring = ntring.replace(pad, '')
                     
                     # Attempts to format the terminal items
                     terminal_format = nstring.split('\\n')
