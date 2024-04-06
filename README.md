@@ -1,5 +1,6 @@
 # L2Shell
 L2Shell is an opensource tool used for communications via data link layer.
+This script should work for both windows and linux systems.
 
 ### Usage
 ```
