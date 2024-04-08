@@ -149,18 +149,12 @@ def process_return_frame(frame):
                     index = -1
                 
                 if index != -1:
-                    string = str(eth_frame.payload.original)[index + len(attacker_id):]
-                    string = string.replace("'", "")
-                    pad = "\\x00" # Gets rid of padding
-                    returnc = "\\r" # Gets rid of return carriage
-                    #nstring = string.replace(attacker_id, '')
-                    string = string.strip(attacker_id)
+                    # This section needs to be delimited twice, not elegant but will have to do for a bit
+                    string = Delimiter(index, str(eth_frame.payload.original), attacker_id)
+                    index2 = string.find(attacker_id)
+                    string = Delimiter(index2, string, attacker_id)
+                    terminal_format = string.split('\\n')
                     
-                    nstring = string.replace(returnc, '')
-                    nstring = nstring.replace(pad, '')
-                    
-                    # Attempts to format the terminal items
-                    terminal_format = nstring.split('\\n')
                     #print(terminal_format)
                     for line in terminal_format:
                         print(line)
