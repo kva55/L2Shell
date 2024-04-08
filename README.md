@@ -19,7 +19,12 @@ python l2shell.py -c -a <attacker_id> -s <session_id>
 
 ### Sending command (from attacker host)
 ```
-attacker_id> <command>
+> <command>
+```
+
+### enable options (from attacker host)
+```
+> enable options
 ```
 
 ### Changing framesize (victim)
