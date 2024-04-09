@@ -109,7 +109,10 @@ def Delimiter(index, message, delimiter): # delimits received message
     string = str(message)
     nstring = string[index + len(delimiter):]
     nstring = nstring.replace(returnc, '')
-    nstring = nstring.replace(replay_frame, '')
+    
+    if relay_broadcast == False: #Don't strip relay frames as bridge beacon
+        nstring = nstring.replace(replay_frame, '')
+    
     nstring = nstring.replace(pad, '')
     nstring = nstring.replace("'", "")    
     return nstring
