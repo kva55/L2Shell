@@ -3,7 +3,6 @@ import hashlib
 from scapy.all import sniff, Ether, sendp, get_if_list, conf # pip
 from scapy.interfaces import get_working_ifaces
 import subprocess, os, socket, sys
-import netifaces
 import platform
 
 print("Current Scapy Interface:", conf.iface)
