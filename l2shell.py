@@ -3,6 +3,7 @@ import hashlib
 from scapy.all import sniff, Ether, sendp, get_if_list, conf # pip
 import subprocess, os, socket, sys
 import netifaces
+import platform
 
 print("Current Scapy Interface:", conf.iface)
 
@@ -89,7 +90,7 @@ def send_frame(message, mac_address, sender):
             
             # Send the Ethernet frame
             for interface in interfaces:
-                if 'windows' in sys.platform:
+                if os_name == "Windows":
                     interface = "\\Device\\NPF_" + interface
                 print(interface)
                 try:
