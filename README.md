@@ -42,4 +42,8 @@ python l2shell.py -l -d <delay> -a <attacker_id> -s <session_id>
 python l2shell.py -c -m <aa:aa:aa:aa:aa:aa> -a <attacker_id> -s <session_id>
 ```
 
+### Requirements
+- pcap
+- scapy
+
 `note: commands and readme are temporary for the prototype`
