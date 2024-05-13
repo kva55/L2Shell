@@ -12,6 +12,7 @@ from UDPRelay import start_sniffing_args # This import is used to send / receive
 
 print("Current Scapy Interface:", conf.iface)
 os_name = platform.system()
+main_interface = conf.iface;
 
 mac_address = "FF:FF:FF:FF:FF:FF" # default return address is broadcast
 frame_size  = 1000 # Default frame size is 1500, but if jumbo frames are supported on the network
@@ -411,12 +412,13 @@ def ControlPanel(userin):
 def proxy(mode):
     global session_id
     global attacker_id
+    global main_interface
     
     #start_udpproxy()
     proxy_thread = threading.Thread(target=start_udpproxy)
     proxy_thread.start()
     
-    start_sniffing_args(attacker_id, session_id, mode)
+    start_sniffing_args(attacker_id, session_id, mode, main_interface)
     #proxy_thread2.start()
     
     #time.sleep(10) #wait 10 seconds
