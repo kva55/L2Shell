@@ -1,6 +1,7 @@
 import threading
 import time
 import signal
+import os
 from scapy.all import sniff, send
 from scapy.all import get_if_list, get_if_addr
 from scapy.all import UDP, IP
@@ -133,7 +134,13 @@ def start_sniffing(attacker_id, session_id, mode, interfaces):
         
 # Start sniffing in a separate thread
 def start_sniffing_args(attacker_id, session_id, mode, interfaces):
-    inter = ["\\Device\\NPF_Loopback",interfaces] 
+    # Do a quick test for the OS - windows uses the generic \Device\NFP_Loopback
+    if os.name == "posix":
+        loopback = "lo"
+    elif os.name == "nt":
+        loopback = "\\Device\\NPF_Loopback"
+     
+    inter = [loopback, interfaces] 
     sniffing_thread = threading.Thread(target=start_sniffing, args=(attacker_id, session_id, mode, inter))
     sniffing_thread.start()
 
