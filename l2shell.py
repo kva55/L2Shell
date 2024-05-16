@@ -10,6 +10,8 @@ from UDPProxy import start_udpproxy, stop_udpproxy # This import simply opens/cl
                                                    
 from UDPRelay import start_sniffing_args # This import is used to send / receive packets and frames.
 
+from utilities.interface import selectInterface # This allows the user to check available interfaces and select them
+
 print("Current Scapy Interface:", conf.iface)
 os_name = platform.system()
 main_interface = conf.iface;
@@ -474,6 +476,7 @@ def main():
     global attacker_id
     global frame_size
     global frame_delay
+    global main_interface
     epilog="""
     e.g. python3 L2Shell.py -l -a 1a1a1a -s 3f3f3f <-- Victim Server
     e.g. python3 L2Shell.py -c -a 1a1a1a -s 3f3f3f <-- Attacker Server       
@@ -492,12 +495,33 @@ def main():
     parser.add_argument("-d", "--delay", help="frame delay for chunked responses", type=int)
     parser.add_argument("-f", "--framesize", help="Sets frame size (victim host)", type=int)
     parser.add_argument("-p", "--proxy", action='store_true', help="Proxy - UDP ports 1111, 2222")
+    parser.add_argument("-i", "--interface", help="Interface", type=str)
+    parser.add_argument("-si", "--setup-interface", help="Interface", action='store_true')
     
     
     args = parser.parse_args()
     
     if args.mac:
         mac_address = args.mac
+        
+    if args.interface:
+        main_interface = "\\Device\\NPF_" + args.interface
+        conf.iface = main_interface
+    
+    # This option shows all the available interfaces and allows the user to choose
+    if args.setup_interface:
+        
+        if os.name == "nt":
+            tmp_interface = selectInterface()
+            main_interface = "\\Device\\NPF_" + tmp_interface
+            conf.iface = main_interface
+        elif os.name == "posix":
+            main_interface = selectInterface()
+            conf.iface = main_interface
+        if conf.iface == "" or conf.iface == "\\Device\\NPF_":
+            print(conf.iface)
+            print("[-] No usable interface selected.")
+            exit(1)
         
     if args.delay:
         frame_delay = args.delay    
