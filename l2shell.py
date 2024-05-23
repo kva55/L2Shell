@@ -99,7 +99,7 @@ def send_frame(message, mac_address, sender):
         for frame in frames:
             time.sleep(frame_delay)
             frame = sender + frame.decode('utf-8') # Make sure to add the attacker id
-            eth_frame = Ether(dst=mac_address) / frame
+            eth_frame = Ether(dst=mac_address, type=ethertype) / frame
             
             # Get a list of all working interfaces
             interfaces = get_working_ifaces()
