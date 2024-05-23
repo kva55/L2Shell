@@ -40,7 +40,7 @@ def Delimiter(payload):
     return msg
 
 # Function to run the sniffing process
-def start_sniffing(attacker_id, session_id, mode, interfaces):
+def start_sniffing(attacker_id, session_id, mode, interfaces, ethertype):
     def packet_handler(packet):
         #print("Packet captured:", packet.summary())
 
@@ -71,12 +71,12 @@ def start_sniffing(attacker_id, session_id, mode, interfaces):
                 
                 if mode == "listen": # The attacker id is omitted
                     frame_payload = str(sessionId + delim1 + base64_string_payload + delim2).encode("utf-8")
-                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF") / frame_payload
+                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF", type=ethertype) / frame_payload
                     sendp(eth_frame, verbose=False)
                 
                 if mode == "connect": # If the attacker_id and session_id are both sent, it is for a node
                     frame_payload = str(attackerId + sessionId + delim1 + base64_string_payload + delim2).encode("utf-8")
-                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF") / frame_payload
+                    eth_frame = Ether(dst="FF:FF:FF:FF:FF:FF", type=ethertype) / frame_payload
                     sendp(eth_frame, verbose=False)  
         
         # if Ethernet frame - not implemented, checking for server response
@@ -133,7 +133,7 @@ def start_sniffing(attacker_id, session_id, mode, interfaces):
         sniff(prn=packet_handler, iface=interfaces)
         
 # Start sniffing in a separate thread
-def start_sniffing_args(attacker_id, session_id, mode, interfaces):
+def start_sniffing_args(attacker_id, session_id, mode, interfaces, ethertype):
     # Do a quick test for the OS - windows uses the generic \Device\NFP_Loopback
     if os.name == "posix":
         loopback = "lo"
@@ -141,7 +141,7 @@ def start_sniffing_args(attacker_id, session_id, mode, interfaces):
         loopback = "\\Device\\NPF_Loopback"
      
     inter = [loopback, interfaces] 
-    sniffing_thread = threading.Thread(target=start_sniffing, args=(attacker_id, session_id, mode, inter))
+    sniffing_thread = threading.Thread(target=start_sniffing, args=(attacker_id, session_id, mode, inter, ethertype))
     sniffing_thread.start()
 
     while sniffing_running:
