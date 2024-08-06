@@ -12,7 +12,7 @@ Other researchers, academic papers, and existing tools were referenced and consu
 
 It is the researchers observation that this technique is consistent with ethernet communication since ethernets' creation, meaning this functionality could be used on all major network implementations that support those standards, being agnostic to both system and infrastructure.
 
-With that, it is recommended that any network and operations stakeholders to evaluate the threat that may result from this tool independently.
+With that, it is recommended that any network and operations stakeholders evaluate the threat that may result from this tool independently.
 
 
 ### Requirements
