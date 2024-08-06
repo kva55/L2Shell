@@ -22,6 +22,33 @@ With that, it is recommended that any network and operations stakeholders evalua
 ## L2Shell Usage
 ```
 python l2shell.py -h
+
+usage:
+    e.g. python3 L2Shell.py -l -a 1a1a1a -s 3f3f3f <-- Victim Server
+    e.g. python3 L2Shell.py -c -a 1a1a1a -s 3f3f3f <-- Attacker Server
+
+
+options:
+  -h, --help            show this help message and exit
+  -l, --listen          Listen for connections
+  -c, --connect         Connect and instruct commands
+  -m MAC, --mac MAC     beacon mac address
+  -s SESSION, --session SESSION
+                        session id
+  -a ATTACKER, --attacker ATTACKER
+                        attacker id
+  -d DELAY, --delay DELAY
+                        frame delay for chunked responses
+  -f FRAMESIZE, --framesize FRAMESIZE
+                        Sets frame size (victim host)
+  -p, --proxy           Proxy - UDP ports 1111, 2222
+  -i INTERFACE, --interface INTERFACE
+                        Interface
+  -si, --setup-interface
+                        Interface
+  -et ETHERTYPE, --ethertype ETHERTYPE
+                        Ethertype 0x0000-0xFFFF
+
 ```
 
 ### On victim machine:
