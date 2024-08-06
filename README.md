@@ -1,6 +1,19 @@
 # L2Shell
-L2Shell is an opensource tool used for communications via data link layer.
-This script should work for both windows and linux systems.
+BSides Presentation: LOLS: LO level Shells - Party Trick or Defenders Nightmare?
+
+https://bsideslv.org/talks#ABCJ83
+
+#### Important Disclaimer
+L2Shell is a tool that was created and demonstrated for BSides Las Vegas 2024. The proof of concept, and versions thereafter should be used ethically and with permission from involved parties. It is suggested to abide by applicable and local laws. The researcher does not take responsibility in the distribution, modification, or usage of this code.
+
+While L2Shell is a tool and combination of techniques that demonstrate covert communication, data smuggling and exfiltration with a focus on C2 capabilities specifically on data link layer, it is for demonstration and testing purposes. 
+
+Other researchers, academic papers, and existing tools were referenced and consulted in preparation of the BSides LV conference. 
+
+It is the researchers observation that this technique is consistent with ethernet communication since ethernets' creation, meaning this functionality could be used on all major network implementations that support those standards, being agnostic to both system and infrastructure.
+
+With that, it is recommended that any network and operations stakeholders to evaluate the threat that may result from this tool independently.
+
 
 ### Requirements
 - pcap
