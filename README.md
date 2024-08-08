@@ -3,16 +3,23 @@ BSides Presentation: LOLS: LO level Shells - Party Trick or Defenders Nightmare?
 
 https://bsideslv.org/talks#ABCJ83
 
+<div align="center"">
+  
+  ![L2C2 drawio](https://github.com/user-attachments/assets/47a6d145-2abe-4ed6-b6d6-8ff0f1eaba8b)
+
+</div>
+
+
 #### Important Disclaimer
-L2Shell is a tool that was created and demonstrated for BSides Las Vegas 2024. The proof of concept, and versions thereafter should be used ethically and with permission from involved parties. It is suggested to abide by applicable and local laws. The researcher does not take responsibility in the distribution, modification, or usage of this code.
+L2Shell is a tool that was created and demonstrated for BSides Las Vegas 2024. The proof of concept, and versions thereafter should be used ethically and with permission from involved parties. It is suggested to abide by applicable and local laws. The researcher does not take responsibility in the distribution, modification, stability, or usage of this code.
 
 While L2Shell is a tool and combination of techniques that demonstrate covert communication, data smuggling and exfiltration with a focus on C2 capabilities specifically on data link layer, it is for demonstration and testing purposes. 
 
 Other researchers, academic papers, and existing tools were referenced and consulted in preparation of the BSides LV conference. 
 
-It is the researchers observation that this technique is consistent with ethernet communication since ethernets' creation, meaning this functionality could be used on all major network implementations that support those standards, being agnostic to both system and infrastructure.
+It is the researchers observation that this technique is consistent with ethernet communication since ethernets creation, meaning this functionality could be used on all major network implementations that support those standards (802.3, 802.11), being agnostic to both system and infrastructure.
 
-With that, it is recommended that any network and operations stakeholders evaluate the threat that may result from this tool independently.
+With that, it is recommended that any network and operations stakeholders evaluate the threat that may result from this tool and ethernets functionality independently.
 
 
 ### Requirements
@@ -104,6 +111,18 @@ python l2shell.py -c -a <attacker_id> -s <session_id> -et <0x0000-0xFFFF> -p
 ```
 
 ## L2Tunnel - Tunneling Netcat
+### Script / Code Dependencies:
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/a68bddc4-a262-4420-9784-705df2c40b1c" style="width: 90%;">
+</div>
+
+### Dataflow Diagram:
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/aeeb3b37-8acd-4684-946c-a5d917e93ccd" style="width: 90%;">
+</div>
+
+
 ### Attacker Machine
 ```
 python l2shell.py -c -a <attacker_id> -s <session_id> -p
