@@ -26,7 +26,7 @@ With that, it is recommended that any network and operations stakeholders evalua
 - pcap
 - scapy
 
-## L2Shell Usage
+## L2Shell Usage (Ephemeral Shell via Python OS cmds)
 ```
 python l2shell.py -h
 
