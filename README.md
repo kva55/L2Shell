@@ -2,6 +2,7 @@
 BSides Presentation: LOLS: LO level Shells - Party Trick or Defenders Nightmare?
 
 https://bsideslv.org/talks#ABCJ83
+https://youtu.be/jYNXtgySW4Q
 
 <div align="center"">
   
